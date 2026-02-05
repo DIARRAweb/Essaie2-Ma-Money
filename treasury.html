@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trésorerie</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+<h1>💰 Trésorerie Admin</h1>
+</header>
+
+<main>
+<section class="dashboard-box">
+
+<h2 id="balance"></h2>
+
+<label>Taux (%)</label>
+<input id="rate" type="number">
+
+<button onclick="updateRate()">Modifier</button>
+<button onclick="sendFees()">Envoyer frais à Admin</button>
+<button onclick="goBack()">Retour</button>
+
+</section>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD3XGP0vqqCwKftSvn1M72N_O0lxtIjzFc",
+  authDomain: "ma-money-2841e.firebaseapp.com",
+  projectId: "ma-money-2841e",
+  storageBucket: "ma-money-2841e.firebasestorage.app",
+  messagingSenderId: "725879283734",
+  appId: "1:725879283734:web:70130964d6a7f33a335537"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+async function load(){
+const snap = await get(ref(db,"treasury"));
+let t = snap.val() || { balance:0, rate:0.01 };
+balance.innerText = "Solde : " + t.balance + " FCFA";
+rate.value = t.rate * 100;
+}
+load();
+
+window.updateRate = async function(){
+let r = parseFloat(rate.value);
+await update(ref(db,"treasury"), { rate: r/100 });
+alert("Taux modifié !");
+};
+
+window.sendFees = async function(){
+const treasurySnap = await get(ref(db,"treasury"));
+const adminSnap = await get(ref(db,"users/99999999"));
+
+let t = treasurySnap.val();
+let admin = adminSnap.val();
+
+admin.solde += t.balance;
+t.balance = 0;
+
+await update(ref(db,"users/99999999"), admin);
+await update(ref(db,"treasury"), t);
+
+alert("Frais transférés !");
+load();
+};
+
+window.goBack = function(){
+window.location.href = "admin.html";
+};
+</script>
+
+</body>
+</html>

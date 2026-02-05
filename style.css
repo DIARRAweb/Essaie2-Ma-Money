@@ -1,0 +1,135 @@
+ body {
+font-family: "Segoe UI", Arial, sans-serif;
+background: linear-gradient(135deg, #f7f7f7, #ffffff);
+color: #222;
+margin: 0;
+}
+
+/* HEADER */
+header {
+background: linear-gradient(135deg, #ff6a00, #ff9f00);
+color: white;
+text-align: center;
+padding: 18px;
+font-size: 18px;
+font-weight: bold;
+letter-spacing: 0.5px;
+}
+
+/* MAIN */
+main {
+display: flex;
+justify-content: center;
+padding: 30px;
+flex-wrap: wrap;
+}
+
+/* CARDS */
+section, .dashboard-box {
+background: white;
+padding: 25px;
+border-radius: 16px;
+width: 360px;
+max-width: 100%;
+box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+transition: transform 0.2s ease;
+}
+
+section:hover {
+transform: scale(1.01);
+}
+
+/* TITRES */
+h2, h3 {
+text-align: center;
+color: #ff6a00;
+margin-bottom: 15px;
+}
+
+/* INPUTS */
+input {
+width: 100%;
+padding: 10px;
+margin-top: 10px;
+border-radius: 10px;
+border: 1px solid #ddd;
+background: #fafafa;
+outline: none;
+font-size: 14px;
+}
+
+/* BUTTONS */
+button, .btn {
+width: 100%;
+padding: 12px;
+margin-top: 12px;
+border-radius: 10px;
+border: none;
+background: linear-gradient(135deg, #ff6a00, #ff9f00);
+color: white;
+font-weight: bold;
+cursor: pointer;
+transition: 0.2s ease;
+}
+
+button:hover, .btn:hover {
+opacity: 0.9;
+transform: scale(1.02);
+}
+
+/* CENTER */
+.center {
+text-align: center;
+margin-top: 70px;
+max-width: 650px;
+}
+
+/* HERO BOX */
+.hero {
+background: white;
+padding: 30px;
+border-radius: 18px;
+box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* ADMIN GRID */
+.admin-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 12px;
+}
+
+/* USERS LIST */
+.user-card {
+background: #f9f9f9;
+padding: 12px;
+border-radius: 10px;
+margin-bottom: 8px;
+border-left: 4px solid #ff6a00;
+font-size: 14px;
+}
+
+/* FOOTER */
+footer {
+text-align: center;
+padding: 15px;
+margin-top: 40px;
+font-size: 14px;
+color: #777;
+background: #fff;
+}
+
+/* ERRORS */
+.error {
+color: red;
+text-align: center;
+margin-top: 8px;
+font-weight: bold;
+}
+
+/* SUCCESS */
+.success {
+color: green;
+text-align: center;
+font-weight: bold;
+}

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+<h1>MaliPay 💎</h1>
+</header>
+
+<main>
+<section class="dashboard-box">
+
+<h2 id="welcome"></h2>
+<p>Solde actuel</p>
+<p id="solde"></p>
+
+<button onclick="logout()">Déconnexion</button>
+
+<hr>
+
+<h3>Envoyer de l'argent</h3>
+
+<input id="receiver" placeholder="Numéro destinataire">
+<input id="amount" type="number" placeholder="Montant FCFA">
+
+<button onclick="sendMoney()">Envoyer</button>
+<p id="message"></p>
+
+</section>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import { getDatabase, ref, get, update, push } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD3XGP0vqqCwKftSvn1M72N_O0lxtIjzFc",
+  authDomain: "ma-money-2841e.firebaseapp.com",
+  databaseURL: "https://ma-money-2841e-default-rtdb.firebaseio.com",
+  projectId: "ma-money-2841e",
+  storageBucket: "ma-money-2841e.appspot.com",
+  messagingSenderId: "725879283734",
+  appId: "1:725879283734:web:70130964d6a7f33a335537"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let currentUser = JSON.parse(localStorage.getItem("loggedUser"));
+if(!currentUser) window.location.href = "login.html";
+
+const welcome = document.getElementById("welcome");
+const soldeBox = document.getElementById("solde");
+const messageBox = document.getElementById("message");
+
+welcome.innerText = "Bienvenue " + currentUser.name;
+
+async function loadBalance(){
+const snap = await get(ref(db, "users/" + currentUser.phone));
+currentUser = snap.val();
+localStorage.setItem("loggedUser", JSON.stringify(currentUser));
+soldeBox.innerText = currentUser.solde + " FCFA";
+}
+loadBalance();
+
+window.sendMoney = async function(){
+const receiverPhone = document.getElementById("receiver").value.trim();
+const amount = parseFloat(document.getElementById("amount").value);
+
+if(amount <= 0){ messageBox.innerText = "Montant invalide"; return; }
+
+const senderSnap = await get(ref(db, "users/" + currentUser.phone));
+const receiverSnap = await get(ref(db, "users/" + receiverPhone));
+const treasurySnap = await get(ref(db, "treasury"));
+
+if(!senderSnap.exists() || !receiverSnap.exists()){
+messageBox.innerText = "Compte introuvable";
+return;
+}
+
+let sender = senderSnap.val();
+let receiver = receiverSnap.val();
+let treasury = treasurySnap.exists() ? treasurySnap.val() : { balance:0, rate:0.01 };
+
+if(sender.frozen){
+messageBox.innerText = "Compte gelé";
+return;
+}
+
+let fee = amount * treasury.rate;
+let total = amount + fee;
+
+if(sender.solde < total){
+messageBox.innerText = "Solde insuffisant";
+return;
+}
+
+sender.solde -= total;
+receiver.solde += amount;
+treasury.balance += fee;
+
+await update(ref(db, "users/" + sender.phone), sender);
+await update(ref(db, "users/" + receiver.phone), receiver);
+await update(ref(db, "treasury"), treasury);
+
+await push(ref(db, "history"), {
+from: sender.phone,
+to: receiver.phone,
+amount, fee,
+date: new Date().toLocaleString()
+});
+
+messageBox.innerText = "✅ Transfert réussi";
+loadBalance();
+};
+
+window.logout = function(){
+localStorage.removeItem("loggedUser");
+window.location.href = "login.html";
+};
+</script>
+
+</body>
+</html>

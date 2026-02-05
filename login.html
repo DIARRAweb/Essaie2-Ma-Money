@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+<h1>MaliPay ⚡</h1>
+</header>
+
+<main>
+<section>
+<h2>Accès sécurisé</h2>
+
+<form id="loginForm">
+<label>Numéro</label>
+<input type="text" id="phone" required>
+
+<label>Mot de passe</label>
+<input type="password" id="password" required>
+
+<button type="submit">Connexion</button>
+</form>
+
+<p id="error" class="error"></p>
+</section>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD3XGP0vqqCwKftSvn1M72N_O0lxtIjzFc",
+  authDomain: "ma-money-2841e.firebaseapp.com",
+  databaseURL: "https://ma-money-2841e-default-rtdb.firebaseio.com",
+  projectId: "ma-money-2841e",
+  storageBucket: "ma-money-2841e.appspot.com",
+  messagingSenderId: "725879283734",
+  appId: "1:725879283734:web:70130964d6a7f33a335537"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+document.getElementById("loginForm").addEventListener("submit", async (e)=>{
+e.preventDefault();
+
+const phone = document.getElementById("phone").value.trim();
+const password = document.getElementById("password").value.trim();
+const error = document.getElementById("error");
+
+error.innerText = "";
+
+try {
+const snap = await get(ref(db, "users/" + phone));
+
+if(!snap.exists()){
+error.innerText = "❌ Numéro introuvable";
+return;
+}
+
+const user = snap.val();
+
+if(user.password !== password){
+error.innerText = "❌ Mot de passe incorrect";
+return;
+}
+
+localStorage.setItem("loggedUser", JSON.stringify(user));
+
+window.location.href = user.role === "admin" ? "admin.html" : "dashboard.html";
+
+} catch {
+error.innerText = "❌ Erreur Firebase";
+}
+});
+</script>
+
+</body>
+</html>
