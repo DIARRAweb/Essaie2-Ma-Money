@@ -32,16 +32,24 @@ body::before {
   z-index: -1;
 }
 
-/* 🧊 GLASS CARD */
+/* 🧊 GLASS CARD — RESPONSIVE FIX */
 .dashboard-box {
-  width: 400px;
-  margin: 40px auto;
-  padding: 25px;
+  max-width: 420px;
+  width: 92%;
+  margin: 20px auto;
+  padding: 20px;
   border-radius: 22px;
   background: rgba(255,255,255,0.92);
   backdrop-filter: blur(16px);
   box-shadow: 0 15px 35px rgba(0,0,0,0.3);
   animation: fadeUp 0.7s ease;
+}
+
+/* SMALL MOBILE */
+@media (max-width: 480px) {
+  .dashboard-box {
+    padding: 16px;
+  }
 }
 
 @keyframes fadeUp {
@@ -54,6 +62,7 @@ body::before {
   padding: 12px;
   margin-top: 10px;
   border-radius: 14px;
+  font-size: 14px;
 }
 
 button {
@@ -66,6 +75,7 @@ button {
   cursor: pointer;
   background: linear-gradient(45deg,#ff9a00,#ff6a00);
   color: white;
+  font-size: 15px;
 }
 
 button:disabled {
@@ -79,6 +89,15 @@ input, textarea {
   border-radius: 12px;
   border: 1px solid #ccc;
   background: white;
+  font-size: 15px;
+}
+
+header {
+  text-align:center;
+  padding:12px;
+  font-size:22px;
+  font-weight:bold;
+  color:#ff9a00;
 }
 </style>
 </head>
@@ -89,9 +108,7 @@ input, textarea {
   <source src="bg.mp4" type="video/mp4">
 </video>
 
-<header style="text-align:center;padding:15px;font-size:26px;font-weight:bold;color:#ff9a00;">
-💎 MaliPay — Dashboard
-</header>
+<header>💎 MaliPay — Dashboard</header>
 
 <main>
 <section class="dashboard-box">
@@ -99,7 +116,7 @@ input, textarea {
 <h2 id="welcome"></h2>
 
 <p>💰 Solde actuel</p>
-<p id="solde" style="font-size:28px;font-weight:bold;color:#ff9a00;"></p>
+<p id="solde" style="font-size:26px;font-weight:bold;color:#ff9a00;"></p>
 
 <button onclick="logout()" style="background:crimson;">🚪 Déconnexion</button>
 
@@ -258,7 +275,7 @@ window.changePassword = async function(){
   passMsg.innerText = "✅ Mot de passe modifié";
 };
 
-// 💸 TRANSFERT FIXÉ
+// 💸 TRANSFERT
 window.sendMoney = async function(){
   if(sendBtn.disabled) return;
 
