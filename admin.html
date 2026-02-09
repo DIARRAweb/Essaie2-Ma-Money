@@ -3,159 +3,127 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin</title>
-<link rel="stylesheet" href="style.css">
+<title>MaliPay Admin</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Segoe UI, sans-serif;
+  color: #111;
+}
+
+/* VIDEO BG */
+#bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+  filter: brightness(0.8) saturate(1.4);
+}
+
+/* ORANGE OVERLAY */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,140,0,0.35), rgba(255,80,0,0.25));
+  z-index: -1;
+}
+
+header {
+  text-align: center;
+  font-size: 26px;
+  padding: 18px;
+  font-weight: bold;
+  color: #ff9a00;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 25px;
+}
+
+.card {
+  padding: 22px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.35);
+  text-align: center;
+  transition: .3s;
+}
+.card:hover { transform: scale(1.05); }
+
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(45deg,#ff9a00,#ff6a00);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:hover { transform: scale(1.05); }
+</style>
 </head>
+
 <body>
 
-<header>
-<h1>🛡 MaliPay — Admin</h1>
-</header>
+<video autoplay muted loop id="bg-video">
+  <source src="bg-admin.mp4" type="video/mp4">
+</video>
 
-<main>
-<section class="dashboard-box">
+<header>🛡 MaliPay — Admin Panel</header>
 
-<h3>Créer utilisateur</h3>
-<input id="newName" placeholder="Nom">
-<input id="newPhone" placeholder="Téléphone">
-<input id="newPass" placeholder="Mot de passe">
-<input id="newSolde" type="number" placeholder="Solde">
+<main class="grid">
 
-<button onclick="addUser()">Ajouter</button>
+<div class="card">
+<h3>👥 Utilisateurs</h3>
+<p>Créer, modifier, supprimer</p>
+<button onclick="location.href='users.html'">Ouvrir</button>
+</div>
 
-<hr>
+<div class="card">
+<h3>📜 Historique</h3>
+<p>Transactions & annulations</p>
+<button onclick="location.href='history.html'">Ouvrir</button>
+</div>
 
-<h3>Gestion</h3>
-<input id="targetPhone" placeholder="Téléphone">
-<input id="amount" type="number" placeholder="Montant">
+<div class="card">
+<h3>🚨 Réclamations</h3>
+<p>Plaintes & erreurs</p>
+<button onclick="location.href='claims.html'">Ouvrir</button>
+</div>
 
-<button onclick="deposit()">Dépôt</button>
-<button onclick="withdraw()">Retrait</button>
+<div class="card">
+<h3>🤖 Auto-Pilot</h3>
+<p>Gestion automatique</p>
+<button onclick="location.href='autopilot.html'">Ouvrir</button>
+</div>
 
-<hr>
+<div class="card">
+<h3>💰 Trésorerie</h3>
+<button onclick="location.href='treasury.html'">Ouvrir</button>
+</div>
 
-<button onclick="window.location.href='treasury.html'">💰 Trésorerie</button>
+<div class="card">
+<h3>🚪 Sécurité</h3>
+<button onclick="logout()" style="background:crimson;">Déconnexion</button>
+</div>
 
-<hr>
-
-<h3>Utilisateurs</h3>
-<div id="userList"></div>
-
-<hr>
-
-<h3>Historique</h3>
-<div id="historyList"></div>
-
-<button onclick="logout()">Déconnexion</button>
-
-</section>
 </main>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyD3XGP0vqqCwKftSvn1M72N_O0lxtIjzFc",
-  authDomain: "ma-money-2841e.firebaseapp.com",
-  databaseURL: "https://ma-money-2841e-default-rtdb.firebaseio.com",
-  projectId: "ma-money-2841e",
-  storageBucket: "ma-money-2841e.appspot.com",
-  messagingSenderId: "725879283734",
-  appId: "1:725879283734:web:70130964d6a7f33a335537"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-let admin = JSON.parse(localStorage.getItem("loggedUser"));
-if(!admin || admin.role !== "admin") window.location.href = "login.html";
-
-async function loadUsers(){
-const snap = await get(ref(db,"users"));
-userList.innerHTML = "";
-Object.values(snap.val() || {}).forEach(u=>{
-userList.innerHTML += `
-<div class="user-card">
-<strong>${u.name}</strong><br>
-📱 ${u.phone}<br>
-💰 ${u.solde} FCFA<br>
-${u.frozen ? "❄ Gelé" : "Actif"}
-<button onclick="toggleFreeze('${u.phone}')">Geler</button>
-<button onclick="deleteUser('${u.phone}')">Supprimer</button>
-</div>`;
-});
+<script>
+function logout(){
+  localStorage.removeItem("loggedUser");
+  window.location.href="login.html";
 }
-
-window.addUser = async function(){
-await set(ref(db,"users/"+newPhone.value), {
-phone:newPhone.value,
-password:newPass.value,
-name:newName.value,
-solde:parseFloat(newSolde.value)||0,
-role:"user",
-frozen:false
-});
-alert("Ajouté !");
-loadUsers();
-};
-
-window.toggleFreeze = async function(phone){
-const snap = await get(ref(db,"users/"+phone));
-let user = snap.val();
-user.frozen = !user.frozen;
-await update(ref(db,"users/"+phone), user);
-loadUsers();
-};
-
-window.deleteUser = async function(phone){
-if(confirm("Supprimer ?")){
-await remove(ref(db,"users/"+phone));
-loadUsers();
-}
-};
-
-window.deposit = async function(){
-let phone = targetPhone.value;
-let amount = parseFloat(document.getElementById("amount").value);
-const snap = await get(ref(db,"users/"+phone));
-let user = snap.val();
-user.solde += amount;
-await update(ref(db,"users/"+phone), user);
-loadUsers();
-};
-
-window.withdraw = async function(){
-let phone = targetPhone.value;
-let amount = parseFloat(document.getElementById("amount").value);
-const snap = await get(ref(db,"users/"+phone));
-let user = snap.val();
-if(user.solde < amount){ alert("Solde insuffisant"); return; }
-user.solde -= amount;
-await update(ref(db,"users/"+phone), user);
-loadUsers();
-};
-
-async function loadHistory(){
-const snap = await get(ref(db,"history"));
-historyList.innerHTML = "";
-Object.values(snap.val() || {}).forEach(h=>{
-historyList.innerHTML += `
-<div class="user-card">
-📤 ${h.from} ➜ 📥 ${h.to}<br>
-💰 ${h.amount} FCFA | Frais ${h.fee}<br>
-🕒 ${h.date}
-</div>`;
-});
-}
-
-loadUsers();
-loadHistory();
-
-window.logout = function(){
-localStorage.removeItem("loggedUser");
-window.location.href="login.html";
-};
 </script>
 
 </body>
