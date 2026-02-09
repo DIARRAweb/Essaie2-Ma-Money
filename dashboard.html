@@ -3,49 +3,158 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard</title>
-<link rel="stylesheet" href="style.css">
+<title>MaliPay Dashboard</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  color: #111;
+}
+
+/* 🎥 VIDEO BACKGROUND */
+#bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+  filter: brightness(0.75) saturate(1.4);
+}
+
+/* 🟠 ORANGE OVERLAY */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,140,0,0.35), rgba(255,80,0,0.25));
+  z-index: -1;
+}
+
+/* 🧊 GLASS CARD */
+.dashboard-box {
+  width: 400px;
+  margin: 40px auto;
+  padding: 25px;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+  animation: fadeUp 0.7s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(25px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.user-card {
+  background: rgba(255,255,255,0.95);
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 14px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 12px;
+  border-radius: 14px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  background: linear-gradient(45deg,#ff9a00,#ff6a00);
+  color: white;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  background: white;
+}
+</style>
 </head>
+
 <body>
 
-<header>
-<h1>MaliPay 💎</h1>
+<video autoplay muted loop id="bg-video">
+  <source src="bg.mp4" type="video/mp4">
+</video>
+
+<header style="text-align:center;padding:15px;font-size:26px;font-weight:bold;color:#ff9a00;">
+💎 MaliPay — Dashboard
 </header>
 
 <main>
 <section class="dashboard-box">
 
 <h2 id="welcome"></h2>
-<p>Solde actuel</p>
-<p id="solde"></p>
 
-<button onclick="logout()">Déconnexion</button>
+<p>💰 Solde actuel</p>
+<p id="solde" style="font-size:28px;font-weight:bold;color:#ff9a00;"></p>
+
+<button onclick="logout()" style="background:crimson;">🚪 Déconnexion</button>
 
 <hr>
 
-<h3>Envoyer de l'argent</h3>
+<!-- 🔔 NOTIFICATIONS -->
+<h3 onclick="toggleNotifications()" style="cursor:pointer;">
+📩 Notifications (<span id="notifCount">0</span>)
+</h3>
+<div id="notifBox" style="display:none;"></div>
 
+<hr>
+
+<!-- 🔐 PASSWORD -->
+<h3 onclick="togglePassword()" style="cursor:pointer;">
+🔐 Changer mot de passe
+</h3>
+<div id="passwordBox" style="display:none;">
+<input id="oldPass" type="password" placeholder="Ancien mot de passe">
+<input id="newPass" type="password" placeholder="Nouveau mot de passe">
+<button onclick="changePassword()">Modifier</button>
+<p id="passMsg"></p>
+</div>
+
+<hr>
+
+<!-- 💸 TRANSFERT -->
+<h3 onclick="toggleTransfer()" style="cursor:pointer;">
+💸 Envoyer de l'argent
+</h3>
+
+<div id="transferBox" style="display:none;">
 <input id="receiver" placeholder="Numéro destinataire">
 <input id="amount" type="number" placeholder="Montant FCFA">
+<textarea id="reason" placeholder="Raison (facultatif)"></textarea>
 
-<button onclick="sendMoney()">Envoyer</button>
+<label>📅 Programmer transfert (optionnel)</label>
+<input id="scheduleDate" type="datetime-local">
+
+<button id="sendBtn" onclick="sendMoney()">Envoyer</button>
 <p id="message"></p>
+</div>
 
 </section>
 </main>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-import { getDatabase, ref, get, update, push } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+import { getDatabase, ref, get, update, push, remove } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD3XGP0vqqCwKftSvn1M72N_O0lxtIjzFc",
   authDomain: "ma-money-2841e.firebaseapp.com",
   databaseURL: "https://ma-money-2841e-default-rtdb.firebaseio.com",
-  projectId: "ma-money-2841e",
-  storageBucket: "ma-money-2841e.appspot.com",
-  messagingSenderId: "725879283734",
-  appId: "1:725879283734:web:70130964d6a7f33a335537"
+  projectId: "ma-money-2841e"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -57,71 +166,223 @@ if(!currentUser) window.location.href = "login.html";
 const welcome = document.getElementById("welcome");
 const soldeBox = document.getElementById("solde");
 const messageBox = document.getElementById("message");
+const notifBox = document.getElementById("notifBox");
+const notifCount = document.getElementById("notifCount");
+const sendBtn = document.getElementById("sendBtn");
 
-welcome.innerText = "Bienvenue " + currentUser.name;
+welcome.innerText = "👋 Bienvenue " + currentUser.name;
 
+// 🔄 SOLDE
 async function loadBalance(){
-const snap = await get(ref(db, "users/" + currentUser.phone));
-currentUser = snap.val();
-localStorage.setItem("loggedUser", JSON.stringify(currentUser));
-soldeBox.innerText = currentUser.solde + " FCFA";
+  const snap = await get(ref(db, "users/" + currentUser.phone));
+  currentUser = snap.val();
+  localStorage.setItem("loggedUser", JSON.stringify(currentUser));
+  soldeBox.innerText = currentUser.solde + " FCFA";
 }
 loadBalance();
 
-window.sendMoney = async function(){
-const receiverPhone = document.getElementById("receiver").value.trim();
-const amount = parseFloat(document.getElementById("amount").value);
+// 🔔 NOTIFS
+async function loadNotifications(){
+  const snap = await get(ref(db, "notifications/" + currentUser.phone));
+  notifBox.innerHTML = "";
+  let count = 0;
 
-if(amount <= 0){ messageBox.innerText = "Montant invalide"; return; }
-
-const senderSnap = await get(ref(db, "users/" + currentUser.phone));
-const receiverSnap = await get(ref(db, "users/" + receiverPhone));
-const treasurySnap = await get(ref(db, "treasury"));
-
-if(!senderSnap.exists() || !receiverSnap.exists()){
-messageBox.innerText = "Compte introuvable";
-return;
+  if(snap.exists()){
+    Object.entries(snap.val()).reverse().forEach(([id, n])=>{
+      count++;
+      notifBox.innerHTML += `
+      <div class="user-card">
+        <strong>${n.title}</strong><br>
+        📱 ${n.phone}<br>
+        💰 ${n.amount} FCFA<br>
+        🕒 ${n.date}<br>
+        📝 ${n.reason || "Aucune raison"}
+        ${n.claimable ? `<button onclick="sendClaim('${n.txId}')" style="background:red;">🚨 Réclamation</button>` : ""}
+        <button onclick="deleteNotif('${id}')" style="background:crimson;">🗑 Supprimer</button>
+      </div>`;
+    });
+  }
+  notifCount.innerText = count;
 }
+loadNotifications();
 
-let sender = senderSnap.val();
-let receiver = receiverSnap.val();
-let treasury = treasurySnap.exists() ? treasurySnap.val() : { balance:0, rate:0.01 };
-
-if(sender.frozen){
-messageBox.innerText = "Compte gelé";
-return;
-}
-
-let fee = amount * treasury.rate;
-let total = amount + fee;
-
-if(sender.solde < total){
-messageBox.innerText = "Solde insuffisant";
-return;
-}
-
-sender.solde -= total;
-receiver.solde += amount;
-treasury.balance += fee;
-
-await update(ref(db, "users/" + sender.phone), sender);
-await update(ref(db, "users/" + receiver.phone), receiver);
-await update(ref(db, "treasury"), treasury);
-
-await push(ref(db, "history"), {
-from: sender.phone,
-to: receiver.phone,
-amount, fee,
-date: new Date().toLocaleString()
-});
-
-messageBox.innerText = "✅ Transfert réussi";
-loadBalance();
+// 🗑 DELETE NOTIF
+window.deleteNotif = async function(id){
+  await remove(ref(db, "notifications/" + currentUser.phone + "/" + id));
+  loadNotifications();
 };
 
+// 🚨 CLAIM
+window.sendClaim = async function(txId){
+  const txSnap = await get(ref(db,"history/" + txId));
+  if(!txSnap.exists()) return alert("Transaction introuvable");
+
+  let tx = txSnap.val();
+  let receiverSnap = await get(ref(db,"users/" + tx.to));
+  if(!receiverSnap.exists()) return alert("Destinataire introuvable");
+
+  let receiverData = receiverSnap.val();
+  if(receiverData.solde < tx.amount){
+    alert("❌ Solde destinataire insuffisant");
+    return;
+  }
+
+  await push(ref(db,"claims"), {
+    phone: currentUser.phone,
+    transactionId: txId,
+    message: "Demande d'annulation transaction",
+    date: new Date().toLocaleString()
+  });
+
+  alert("✅ Réclamation envoyée !");
+};
+
+// 🔐 PASSWORD
+window.changePassword = async function(){
+  const oldPassVal = document.getElementById("oldPass").value;
+  const newPassVal = document.getElementById("newPass").value;
+  const passMsg = document.getElementById("passMsg");
+
+  if(oldPassVal !== currentUser.password){
+    passMsg.innerText = "❌ Ancien mot de passe incorrect";
+    return;
+  }
+
+  if(newPassVal.length < 4){
+    passMsg.innerText = "❌ Mot de passe trop court";
+    return;
+  }
+
+  currentUser.password = newPassVal;
+  await update(ref(db, "users/" + currentUser.phone), currentUser);
+  passMsg.innerText = "✅ Mot de passe modifié";
+};
+
+// 💸 TRANSFERT FIXÉ
+window.sendMoney = async function(){
+  if(sendBtn.disabled) return;
+
+  sendBtn.disabled = true;
+  sendBtn.innerText = "⏳ Traitement...";
+
+  try {
+    const receiverPhone = document.getElementById("receiver").value.trim();
+    const amount = parseFloat(document.getElementById("amount").value);
+    const reason = document.getElementById("reason").value.trim();
+    const scheduleDate = document.getElementById("scheduleDate").value;
+
+    if(!receiverPhone || amount <= 0){
+      messageBox.innerText = "❌ Données invalides";
+      resetButton();
+      return;
+    }
+
+    const senderSnap = await get(ref(db,"users/" + currentUser.phone));
+    const receiverSnap = await get(ref(db,"users/" + receiverPhone));
+    const treasurySnap = await get(ref(db,"treasury"));
+
+    if(!senderSnap.exists() || !receiverSnap.exists()){
+      messageBox.innerText = "❌ Compte introuvable";
+      resetButton();
+      return;
+    }
+
+    let sender = senderSnap.val();
+    let receiverData = receiverSnap.val();
+    let treasury = treasurySnap.exists() ? treasurySnap.val() : { balance:0, rate:0.01 };
+
+    let fee = amount * treasury.rate;
+    let total = amount + fee;
+
+    if(sender.solde < total){
+      messageBox.innerText = "❌ Solde insuffisant (montant + frais)";
+      resetButton();
+      return;
+    }
+
+    // PROGRAMMÉ
+    if(scheduleDate){
+      await push(ref(db,"scheduledTransfers"), {
+        from: sender.phone,
+        to: receiverPhone,
+        amount, fee, reason,
+        scheduledFor: scheduleDate,
+        createdAt: new Date().toLocaleString()
+      });
+
+      messageBox.innerText = "📅 Transfert programmé";
+      resetForm();
+      resetButton();
+      return;
+    }
+
+    // IMMÉDIAT
+    sender.solde -= total;
+    receiverData.solde += amount;
+    treasury.balance += fee;
+
+    await update(ref(db,"users/"+sender.phone), sender);
+    await update(ref(db,"users/"+receiverPhone), receiverData);
+    await update(ref(db,"treasury"), treasury);
+
+    const tx = await push(ref(db,"history"), {
+      from: sender.phone,
+      to: receiverPhone,
+      amount, fee, reason,
+      date: new Date().toLocaleString()
+    });
+
+    await push(ref(db,"notifications/"+receiverPhone), {
+      title: "💰 Argent reçu",
+      phone: sender.phone,
+      amount, reason,
+      date: new Date().toLocaleString(),
+      claimable: false
+    });
+
+    await push(ref(db,"notifications/"+sender.phone), {
+      title: "📤 Argent envoyé",
+      phone: receiverPhone,
+      amount, reason,
+      date: new Date().toLocaleString(),
+      claimable: true,
+      txId: tx.key
+    });
+
+    messageBox.innerText = "✅ Transfert réussi";
+    resetForm();
+    loadBalance();
+    loadNotifications();
+
+  } catch(e){
+    messageBox.innerText = "❌ Erreur : " + e.message;
+  }
+
+  resetButton();
+};
+
+// 🧹 RESET
+function resetForm(){
+  document.getElementById("receiver").value = "";
+  document.getElementById("amount").value = "";
+  document.getElementById("reason").value = "";
+  document.getElementById("scheduleDate").value = "";
+}
+
+function resetButton(){
+  sendBtn.disabled = false;
+  sendBtn.innerText = "Envoyer";
+}
+
+// 👁 TOGGLES
+window.toggleNotifications = () => notifBox.style.display = notifBox.style.display === "none" ? "block" : "none";
+window.togglePassword = () => passwordBox.style.display = passwordBox.style.display === "none" ? "block" : "none";
+window.toggleTransfer = () => transferBox.style.display = transferBox.style.display === "none" ? "block" : "none";
+
+// 🚪 LOGOUT
 window.logout = function(){
-localStorage.removeItem("loggedUser");
-window.location.href = "login.html";
+  localStorage.removeItem("loggedUser");
+  window.location.href = "login.html";
 };
 </script>
 
