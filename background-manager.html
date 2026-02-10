@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Fonds — MaliPay</title>
+
+<style>
+body {
+  font-family: Segoe UI;
+  background: linear-gradient(135deg,#ff9a00,#ff6a00);
+  margin: 0;
+  padding: 20px;
+  color: white;
+}
+
+.card {
+  background: rgba(255,255,255,0.15);
+  padding: 18px;
+  border-radius: 18px;
+  backdrop-filter: blur(12px);
+  max-width: 720px;
+  margin: auto;
+}
+
+.drop-zone {
+  border: 3px dashed white;
+  padding: 40px;
+  text-align: center;
+  border-radius: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.drop-zone:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.preview {
+  margin-top: 15px;
+}
+
+.preview-item {
+  position: relative;
+  margin-top: 15px;
+}
+
+.preview img, .preview video {
+  width: 100%;
+  border-radius: 14px;
+}
+
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: crimson;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.status {
+  margin-top: 10px;
+  font-size: 14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>🎨 Gestion Fonds d’écran MaliPay</h2>
+
+<div class="drop-zone" id="dropZone">
+📂 Glisse une image ou vidéo ici
+</div>
+
+<p class="status" id="statusText"></p>
+
+<div class="preview" id="preview"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-storage.js";
+import { getDatabase, ref, push, remove, onValue } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyD3XGP0vqqCwKftSvn1M72N_O0lxtIjzFc",
+  databaseURL: "https://ma-money-2841e-default-rtdb.firebaseio.com",
+  projectId: "ma-money-2841e",
+  storageBucket: "ma-money-2841e.appspot.com"
+});
+
+const db = getDatabase(app);
+const storage = getStorage(app);
+
+const dropZone = document.getElementById("dropZone");
+const preview = document.getElementById("preview");
+const statusText = document.getElementById("statusText");
+
+// 🔄 LIVE LOAD BACKGROUNDS
+onValue(ref(db,"backgrounds/files"), snap => {
+  preview.innerHTML = "";
+  const data = snap.val();
+  if(!data) return;
+
+  Object.entries(data).reverse().forEach(([id, file])=>{
+    renderItem(id, file.url, file.type);
+  });
+});
+
+// 🎨 Render Preview Item
+function renderItem(id, url, type){
+  const div = document.createElement("div");
+  div.className = "preview-item";
+
+  div.innerHTML = `
+    ${type === "video" 
+      ? `<video autoplay loop muted src="${url}"></video>` 
+      : `<img src="${url}">`
+    }
+    <button class="delete-btn" onclick="deleteItem('${id}')">🗑</button>
+  `;
+
+  preview.appendChild(div);
+}
+
+// 🗑 DELETE ONE
+window.deleteItem = async function(id){
+  await remove(ref(db,"backgrounds/files/" + id));
+};
+
+// 📥 Drag Upload
+dropZone.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropZone.style.opacity = 0.7;
+});
+
+dropZone.addEventListener("dragleave", ()=>{
+  dropZone.style.opacity = 1;
+});
+
+dropZone.addEventListener("drop", async e => {
+  e.preventDefault();
+  dropZone.style.opacity = 1;
+
+  const file = e.dataTransfer.files[0];
+  if(!file) return;
+
+  statusText.innerText = "⏳ Upload en cours...";
+
+  try {
+    const fileRef = sRef(storage, "backgrounds/" + Date.now() + "_" + file.name);
+    await uploadBytes(fileRef, file);
+
+    const url = await getDownloadURL(fileRef);
+    const type = file.type.startsWith("video") ? "video" : "image";
+
+    await push(ref(db,"backgrounds/files"), {
+      url,
+      type,
+      date: new Date().toLocaleString()
+    });
+
+    statusText.innerText = "✅ Upload réussi !";
+
+  } catch(err){
+    statusText.innerText = "❌ Erreur : " + err.message;
+  }
+});
+</script>
+
+</body>
+</html>
